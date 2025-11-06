@@ -1,0 +1,42 @@
+name: Run Locust Load Test
+
+on:
+  workflow_dispatch:  # allows manual run from GitHub UI
+
+jobs:
+  locust-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install locust
+
+      - name: Run Locust in headless mode
+        run: |
+          mkdir -p results
+          locust -f locustfile.py \
+            --headless \
+            --host=https://httpbin.org \
+            --users 20 \
+            --spawn-rate 5 \
+            --run-time 1m \
+            --csv=results/locust_run \
+            --only-summary
+        # The '--only-summary' flag makes console output concise
+        # '--csv=results/locust_run' saves CSV reports
+
+      - name: Upload Locust results as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: locust-results
+          path: results/
